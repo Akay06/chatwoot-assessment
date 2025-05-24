@@ -25,7 +25,8 @@ unless Rails.env.production?
     name: 'Acme Org'
   )
 
-  user = User.new(name: 'John', email: 'john@acme.inc', password: 'Password1!', type: 'SuperAdmin')
+  user = User.find_or_initialize_by(email: 'john@acme.inc')
+  user.assign_attributes(name: 'John', password: 'Password1!', type: 'SuperAdmin')
   user.skip_confirmation!
   user.save!
 
