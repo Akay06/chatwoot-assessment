@@ -21,7 +21,7 @@ export const SENDER_TYPES = {
   CONTACT: 'Contact',
   USER: 'User',
   AGENT_BOT: 'agent_bot',
-  CAPTAIN_ASSISTANT: 'captain_assistant',
+  AI_AGENT_TOPIC: 'ai_agent_topic',
 };
 
 export const ORIENTATION = {

@@ -2,18 +2,18 @@ module Enterprise::Account::ConversationsResolutionSchedulerJob
   def perform
     super
 
-    resolve_captain_conversations
+    resolve_ai_agent_conversations
   end
 
   private
 
-  def resolve_captain_conversations
-    CaptainInbox.all.find_each(batch_size: 100) do |captain_inbox|
-      inbox = captain_inbox.inbox
+  def resolve_ai_agent_conversations
+    AiAgentInbox.all.find_each(batch_size: 100) do |ai_agent_inbox|
+      inbox = ai_agent_inbox.inbox
 
       next if inbox.email?
 
-      Captain::InboxPendingConversationsResolutionJob.perform_later(
+      AiAgent::InboxPendingConversationsResolutionJob.perform_later(
         inbox
       )
     end

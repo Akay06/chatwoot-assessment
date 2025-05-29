@@ -1,24 +1,24 @@
 module Enterprise::Api::V1::Accounts::ConversationsController
   extend ActiveSupport::Concern
   included do
-    before_action :set_assistant, only: [:copilot]
+    before_action :set_topic, only: [:copilot]
   end
 
   def copilot
-    # First try to get the user's preferred assistant from UI settings or from the request
-    assistant_id = copilot_params[:assistant_id] || current_user.ui_settings&.dig('preferred_captain_assistant_id')
+    # First try to get the user's preferred topic from UI settings or from the request
+    topic_id = copilot_params[:topic_id] || current_user.ui_settings&.dig('preferred_ai_agent_topic_id')
 
-    # Find the assistant either by ID or from inbox
-    assistant = if assistant_id.present?
-                  Captain::Assistant.find_by(id: assistant_id, account_id: Current.account.id)
+    # Find the topic either by ID or from inbox
+    topic = if topic_id.present?
+                  AiAgent::Topic.find_by(id: topic_id, account_id: Current.account.id)
                 else
-                  @conversation.inbox.captain_assistant
+                  @conversation.inbox.ai_agent_topic
                 end
 
-    return render json: { message: I18n.t('captain.copilot_error') } unless assistant
+    return render json: { message: I18n.t('ai_agent.copilot_error') } unless topic
 
-    response = Captain::Copilot::ChatService.new(
-      assistant,
+    response = AiAgent::Copilot::ChatService.new(
+      topic,
       previous_history: copilot_params[:previous_history],
       conversation_id: @conversation.display_id,
       user_id: Current.user.id
@@ -27,13 +27,13 @@ module Enterprise::Api::V1::Accounts::ConversationsController
     render json: { message: response['response'] }
   end
 
-  def inbox_assistant
-    assistant = @conversation.inbox.captain_assistant
+  def inbox_topic
+    topic = @conversation.inbox.ai_agent_topic
 
-    if assistant
-      render json: { assistant: { id: assistant.id, name: assistant.name } }
+    if topic
+      render json: { topic: { id: topic.id, name: topic.name } }
     else
-      render json: { assistant: nil }
+      render json: { topic: nil }
     end
   end
 
@@ -44,6 +44,6 @@ module Enterprise::Api::V1::Accounts::ConversationsController
   private
 
   def copilot_params
-    params.permit(:previous_history, :message, :assistant_id)
+    params.permit(:previous_history, :message, :topic_id)
   end
 end
