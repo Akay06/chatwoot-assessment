@@ -59,39 +59,20 @@ const toggleBlock = () => {
 </script>
 
 <template>
-  <section
-    class="flex w-full h-full overflow-hidden justify-evenly bg-n-background"
-  >
-    <div
-      class="flex flex-col w-full h-full transition-all duration-300 ltr:2xl:ml-56 rtl:2xl:mr-56"
-    >
+  <section class="flex w-full h-full overflow-hidden justify-evenly bg-n-background">
+    <div class="flex flex-col w-full h-full transition-all duration-300 ltr:2xl:ml-56 rtl:2xl:mr-56">
       <header class="sticky top-0 z-10 px-6 3xl:px-0">
         <div class="w-full mx-auto max-w-[40.625rem]">
           <div class="flex items-center justify-between w-full h-20 gap-2">
-            <Breadcrumb
-              :items="breadcrumbItems"
-              @click="handleBreadcrumbClick"
-            />
+            <Breadcrumb :items="breadcrumbItems" @click="handleBreadcrumbClick" />
             <div class="flex items-center gap-2">
-              <Button
-                :label="
-                  !isContactBlocked
-                    ? $t('CONTACTS_LAYOUT.HEADER.BLOCK_CONTACT')
-                    : $t('CONTACTS_LAYOUT.HEADER.UNBLOCK_CONTACT')
-                "
-                size="sm"
-                slate
-                :is-loading="isUpdating"
-                :disabled="isUpdating"
-                @click="toggleBlock"
-              />
+              <Button :label="!isContactBlocked
+                  ? $t('CONTACTS_LAYOUT.HEADER.BLOCK_CONTACT')
+                  : $t('CONTACTS_LAYOUT.HEADER.UNBLOCK_CONTACT')
+                " size="sm" slate :is-loading="isUpdating" :disabled="isUpdating" @click="toggleBlock" />
               <ComposeConversation :contact-id="contactId">
                 <template #trigger="{ toggle }">
-                  <Button
-                    :label="$t('CONTACTS_LAYOUT.HEADER.SEND_MESSAGE')"
-                    size="sm"
-                    @click="toggle"
-                  />
+                  <Button :label="$t('CONTACTS_LAYOUT.HEADER.SEND_MESSAGE')" size="sm" @click="toggle" />
                 </template>
               </ComposeConversation>
             </div>
@@ -105,10 +86,8 @@ const toggleBlock = () => {
       </main>
     </div>
 
-    <div
-      v-if="slots.sidebar"
-      class="overflow-y-auto justify-end min-w-52 w-full py-6 max-w-md border-l border-n-weak bg-n-solid-2"
-    >
+    <div v-if="slots.sidebar"
+      class="overflow-y-auto justify-end min-w-52 w-full py-6 max-w-md border-l border-n-weak bg-n-solid-2">
       <slot name="sidebar" />
     </div>
   </section>

@@ -679,48 +679,26 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, insertContentIntoEditor);
 
 <template>
   <div ref="editorRoot" class="relative w-full">
-    <TagAgents
-      v-if="showUserMentions && isPrivate"
-      :search-key="mentionSearchKey"
-      @select-agent="content => insertSpecialContent('mention', content)"
-    />
-    <CannedResponse
-      v-if="shouldShowCannedResponses"
-      :search-key="cannedSearchTerm"
-      @replace="content => insertSpecialContent('cannedResponse', content)"
-    />
-    <VariableList
-      v-if="shouldShowVariables"
-      :search-key="variableSearchTerm"
-      @select-variable="content => insertSpecialContent('variable', content)"
-    />
-    <KeyboardEmojiSelector
-      v-if="showEmojiMenu"
-      :search-key="emojiSearchTerm"
-      @select-emoji="emoji => insertSpecialContent('emoji', emoji)"
-    />
-    <input
-      ref="imageUpload"
-      type="file"
-      accept="image/png, image/jpeg, image/jpg, image/gif, image/webp"
-      hidden
-      @change="onFileChange"
-    />
+    <TagAgents v-if="showUserMentions && isPrivate" :search-key="mentionSearchKey"
+      @select-agent="content => insertSpecialContent('mention', content)" />
+    <CannedResponse v-if="shouldShowCannedResponses" :search-key="cannedSearchTerm"
+      @replace="content => insertSpecialContent('cannedResponse', content)" />
+    <VariableList v-if="shouldShowVariables" :search-key="variableSearchTerm"
+      @select-variable="content => insertSpecialContent('variable', content)" />
+    <KeyboardEmojiSelector v-if="showEmojiMenu" :search-key="emojiSearchTerm"
+      @select-emoji="emoji => insertSpecialContent('emoji', emoji)" />
+    <input ref="imageUpload" type="file" accept="image/png, image/jpeg, image/jpg, image/gif, image/webp" hidden
+      @change="onFileChange" />
     <div ref="editor" />
-    <div
-      v-show="isImageNodeSelected && showImageResizeToolbar"
+    <div v-show="isImageNodeSelected && showImageResizeToolbar"
       class="absolute shadow-md rounded-[4px] flex gap-1 py-1 px-1 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-50"
       :style="{
         top: toolbarPosition.top,
         left: toolbarPosition.left,
-      }"
-    >
-      <button
-        v-for="size in sizes"
-        :key="size.name"
+      }">
+      <button v-for="size in sizes" :key="size.name"
         class="text-xs font-medium rounded-[4px] border border-solid border-slate-200 dark:border-slate-600 px-1.5 py-0.5 hover:bg-slate-100 dark:hover:bg-slate-800"
-        @click="setURLWithQueryAndImageSize(size)"
-      >
+        @click="setURLWithQueryAndImageSize(size)">
         {{ size.name }}
       </button>
     </div>
@@ -736,14 +714,14 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, insertContentIntoEditor);
 
   .ProseMirror-menubar {
     min-height: var(--space-two) !important;
-    @apply -ml-2.5 pb-0 bg-transparent text-n-slate-11;
+    @apply -ml-2.5 pb-0 bg-transparent text-n-slate-12;
 
     .ProseMirror-menu-active {
-      @apply bg-slate-75 dark:bg-slate-800;
+      @apply bg-slate-800 dark:bg-slate-800;
     }
   }
 
-  > .ProseMirror {
+  >.ProseMirror {
     @apply p-0 break-words text-slate-800 dark:text-slate-100;
 
     h1,
@@ -802,13 +780,21 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, insertContentIntoEditor);
   }
 
   .ProseMirror-menubar-wrapper {
-    > .ProseMirror {
+    >.ProseMirror {
       @apply text-n-slate-12;
 
       p {
-        @apply text-n-slate-12;
+        @apply text-n-slate-1 dark:text-n-slate-12;
       }
     }
+  }
+
+  .ProseMirror-menubar {
+    @apply text-n-slate-1 dark:text-n-slate-12;
+  }
+
+  .v-popper--has-tooltip {
+    @apply text-n-slate-1 dark:text-n-slate-12;
   }
 }
 

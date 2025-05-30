@@ -26,8 +26,8 @@ export default {
 
 <template>
   <div class="w-8 h-8">
-    <router-link :to="dashboardPath" replace>
-      <img :src="source" :alt="name" />
+    <router-link :to="dashboardPath" replace class="inline-block w-full h-full">
+      <img :src="source" :alt="name" class="w-full h-full object-contain" />
     </router-link>
   </div>
 </template>
