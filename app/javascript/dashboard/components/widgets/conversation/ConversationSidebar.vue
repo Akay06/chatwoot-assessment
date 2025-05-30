@@ -47,36 +47,22 @@ const isFeatureEnabledonAccount = useMapGetter(
 );
 
 const showCopilotTab = computed(() =>
-  isFeatureEnabledonAccount.value(currentAccountId.value, FEATURE_FLAGS.CAPTAIN)
+  isFeatureEnabledonAccount.value(currentAccountId.value, FEATURE_FLAGS.AI_AGENT)
 );
 </script>
 
 <template>
   <div
-    class="ltr:border-l rtl:border-r border-n-weak h-full overflow-hidden z-10 w-80 min-w-80 2xl:min-w-96 2xl:w-96 flex flex-col bg-n-background"
-  >
+    class="ltr:border-l rtl:border-r border-n-weak h-full overflow-hidden z-10 w-80 min-w-80 2xl:min-w-96 2xl:w-96 flex flex-col bg-[#e4cca8] dark:bg-[#495764]">
     <div v-if="showCopilotTab" class="p-2">
-      <TabBar
-        :tabs="tabs"
-        :initial-active-tab="activeTab"
-        class="w-full [&>button]:w-full"
-        @tab-changed="handleTabChange"
-      />
+      <TabBar :tabs="tabs" :initial-active-tab="activeTab" class="w-full [&>button]:w-full"
+        @tab-changed="handleTabChange" />
     </div>
     <div class="flex flex-1 overflow-auto">
-      <ContactPanel
-        v-if="!activeTab"
-        :conversation-id="currentChat.id"
-        :inbox-id="currentChat.inbox_id"
-        :on-toggle="toggleContactPanel"
-      />
-      <CopilotContainer
-        v-else-if="activeTab === 1 && showCopilotTab"
-        :key="currentChat.id"
-        :conversation-inbox-type="channelType"
-        :conversation-id="currentChat.id"
-        class="flex-1"
-      />
+      <ContactPanel v-if="!activeTab" :conversation-id="currentChat.id" :inbox-id="currentChat.inbox_id"
+        :on-toggle="toggleContactPanel" />
+      <CopilotContainer v-else-if="activeTab === 1 && showCopilotTab" :key="currentChat.id"
+        :conversation-inbox-type="channelType" :conversation-id="currentChat.id" class="flex-1" />
     </div>
   </div>
 </template>

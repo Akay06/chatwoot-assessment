@@ -1,0 +1,3 @@
+json.array! @responses do |response|
+  json.partial! 'api/v1/models/ai_agent/topic_response', formats: [:json], resource: response
+end

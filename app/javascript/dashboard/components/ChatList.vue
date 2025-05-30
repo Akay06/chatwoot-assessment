@@ -520,9 +520,9 @@ function initializeFolderToFilterModal(newActiveFolder) {
     const transformed = useCamelCase(filter);
     const values = Array.isArray(transformed.values)
       ? generateValuesForEditCustomViews(
-          useSnakeCase(filter),
-          setParamsForEditFolderModal()
-        )
+        useSnakeCase(filter),
+        setParamsForEditFolderModal()
+      )
       : [];
 
     return {
@@ -810,146 +810,74 @@ watch(conversationFilters, (newVal, oldVal) => {
 </script>
 
 <template>
-  <div
-    class="flex flex-col flex-shrink-0 bg-n-solid-1 conversations-list-wrap"
-    :class="[
-      { hidden: !showConversationList },
-      isOnExpandedLayout ? 'basis-full' : 'w-[360px] 2xl:w-[420px]',
-    ]"
-  >
+  <div class="flex flex-col flex-shrink-0 bg-[#e4cca8] conversations-list-wrap dark:bg-[#495764]" :class="[
+    { hidden: !showConversationList },
+    isOnExpandedLayout ? 'basis-full' : 'w-[360px] 2xl:w-[420px]',
+  ]">
     <slot />
-    <ChatListHeader
-      :page-title="pageTitle"
-      :has-applied-filters="hasAppliedFilters"
-      :has-active-folders="hasActiveFolders"
-      :active-status="activeStatus"
-      :is-on-expanded-layout="isOnExpandedLayout"
-      @add-folders="onClickOpenAddFoldersModal"
-      @delete-folders="onClickOpenDeleteFoldersModal"
-      @filters-modal="onToggleAdvanceFiltersModal"
-      @reset-filters="resetAndFetchData"
-      @basic-filter-change="onBasicFilterChange"
-    />
+    <ChatListHeader :page-title="pageTitle" :has-applied-filters="hasAppliedFilters"
+      :has-active-folders="hasActiveFolders" :active-status="activeStatus" :is-on-expanded-layout="isOnExpandedLayout"
+      @add-folders="onClickOpenAddFoldersModal" @delete-folders="onClickOpenDeleteFoldersModal"
+      @filters-modal="onToggleAdvanceFiltersModal" @reset-filters="resetAndFetchData"
+      @basic-filter-change="onBasicFilterChange" />
 
-    <TeleportWithDirection
-      v-if="showAddFoldersModal"
-      to="#saveFilterTeleportTarget"
-    >
-      <SaveCustomView
-        v-model="appliedFilter"
-        :custom-views-query="foldersQuery"
-        :open-last-saved-item="openLastSavedItemInFolder"
-        @close="onCloseAddFoldersModal"
-      />
+    <TeleportWithDirection v-if="showAddFoldersModal" to="#saveFilterTeleportTarget">
+      <SaveCustomView v-model="appliedFilter" :custom-views-query="foldersQuery"
+        :open-last-saved-item="openLastSavedItemInFolder" @close="onCloseAddFoldersModal" />
     </TeleportWithDirection>
 
-    <DeleteCustomViews
-      v-if="showDeleteFoldersModal"
-      v-model:show="showDeleteFoldersModal"
-      :active-custom-view="activeFolder"
-      :custom-views-id="foldersId"
-      :open-last-item-after-delete="openLastItemAfterDeleteInFolder"
-      @close="onCloseDeleteFoldersModal"
-    />
+    <DeleteCustomViews v-if="showDeleteFoldersModal" v-model:show="showDeleteFoldersModal"
+      :active-custom-view="activeFolder" :custom-views-id="foldersId"
+      :open-last-item-after-delete="openLastItemAfterDeleteInFolder" @close="onCloseDeleteFoldersModal" />
 
-    <ChatTypeTabs
-      v-if="!hasAppliedFiltersOrActiveFolders"
-      :items="assigneeTabItems"
-      :active-tab="activeAssigneeTab"
-      is-compact
-      @chat-tab-change="updateAssigneeTab"
-    />
+    <ChatTypeTabs v-if="!hasAppliedFiltersOrActiveFolders" :items="assigneeTabItems" :active-tab="activeAssigneeTab"
+      is-compact @chat-tab-change="updateAssigneeTab" />
 
-    <p
-      v-if="!chatListLoading && !conversationList.length"
-      class="flex items-center justify-center p-4 overflow-auto"
-    >
+    <p v-if="!chatListLoading && !conversationList.length" class="flex items-center justify-center p-4 overflow-auto">
       {{ $t('CHAT_LIST.LIST.404') }}
     </p>
-    <ConversationBulkActions
-      v-if="selectedConversations.length"
-      :conversations="selectedConversations"
-      :all-conversations-selected="allConversationsSelected"
-      :selected-inboxes="uniqueInboxes"
+    <ConversationBulkActions v-if="selectedConversations.length" :conversations="selectedConversations"
+      :all-conversations-selected="allConversationsSelected" :selected-inboxes="uniqueInboxes"
       :show-open-action="allSelectedConversationsStatus('open')"
       :show-resolved-action="allSelectedConversationsStatus('resolved')"
-      :show-snoozed-action="allSelectedConversationsStatus('snoozed')"
-      @select-all-conversations="toggleSelectAll"
-      @assign-agent="onAssignAgent"
-      @update-conversations="onUpdateConversations"
-      @assign-labels="onAssignLabels"
-      @assign-team="onAssignTeamsForBulk"
-    />
-    <div
-      ref="conversationListRef"
-      class="flex-1 overflow-hidden conversations-list hover:overflow-y-auto"
-      :class="{ 'overflow-hidden': isContextMenuOpen }"
-    >
-      <DynamicScroller
-        ref="conversationDynamicScroller"
-        :items="conversationList"
-        :min-item-size="24"
-        class="w-full h-full overflow-auto"
-      >
+      :show-snoozed-action="allSelectedConversationsStatus('snoozed')" @select-all-conversations="toggleSelectAll"
+      @assign-agent="onAssignAgent" @update-conversations="onUpdateConversations" @assign-labels="onAssignLabels"
+      @assign-team="onAssignTeamsForBulk" />
+    <div ref="conversationListRef" class="flex-1 overflow-hidden conversations-list hover:overflow-y-auto"
+      :class="{ 'overflow-hidden': isContextMenuOpen }">
+      <DynamicScroller ref="conversationDynamicScroller" :items="conversationList" :min-item-size="24"
+        class="w-full h-full overflow-auto">
         <template #default="{ item, index, active }">
           <!--
             If we encounter resizing issues, we can set the `watchData` prop to true
             this will deeply watch the entire object instead of just size dependencies
             But it can impact performance
           -->
-          <DynamicScrollerItem
-            :item="item"
-            :active="active"
-            :data-index="index"
-            :size-dependencies="[
-              item.messages,
-              item.labels,
-              item.uuid,
-              item.inbox_id,
-            ]"
-          >
-            <ConversationItem
-              :source="item"
-              :label="label"
-              :team-id="teamId"
-              :folders-id="foldersId"
-              :conversation-type="conversationType"
-              :show-assignee="showAssigneeInConversationCard"
-              @select-conversation="selectConversation"
-              @de-select-conversation="deSelectConversation"
-            />
+          <DynamicScrollerItem :item="item" :active="active" :data-index="index" :size-dependencies="[
+            item.messages,
+            item.labels,
+            item.uuid,
+            item.inbox_id,
+          ]">
+            <ConversationItem :source="item" :label="label" :team-id="teamId" :folders-id="foldersId"
+              :conversation-type="conversationType" :show-assignee="showAssigneeInConversationCard"
+              @select-conversation="selectConversation" @de-select-conversation="deSelectConversation" />
           </DynamicScrollerItem>
         </template>
         <template #after>
           <div v-if="chatListLoading" class="text-center">
             <span class="mt-4 mb-4 spinner" />
           </div>
-          <p
-            v-else-if="showEndOfListMessage"
-            class="p-4 text-center text-slate-400 dark:text-slate-300"
-          >
+          <p v-else-if="showEndOfListMessage" class="p-4 text-center text-slate-400 dark:text-slate-300">
             {{ $t('CHAT_LIST.EOF') }}
           </p>
-          <IntersectionObserver
-            v-else
-            :options="intersectionObserverOptions"
-            @observed="loadMoreConversations"
-          />
+          <IntersectionObserver v-else :options="intersectionObserverOptions" @observed="loadMoreConversations" />
         </template>
       </DynamicScroller>
     </div>
-    <TeleportWithDirection
-      v-if="showAdvancedFilters"
-      to="#conversationFilterTeleportTarget"
-    >
-      <ConversationFilter
-        v-model="appliedFilter"
-        :folder-name="activeFolderName"
-        :is-folder-view="hasActiveFolders"
-        @apply-filter="onApplyFilter"
-        @update-folder="onUpdateSavedFilter"
-        @close="closeAdvanceFiltersModal"
-      />
+    <TeleportWithDirection v-if="showAdvancedFilters" to="#conversationFilterTeleportTarget">
+      <ConversationFilter v-model="appliedFilter" :folder-name="activeFolderName" :is-folder-view="hasActiveFolders"
+        @apply-filter="onApplyFilter" @update-folder="onUpdateSavedFilter" @close="closeAdvanceFiltersModal" />
     </TeleportWithDirection>
   </div>
 </template>
