@@ -25,6 +25,23 @@ class Api::V1::Accounts::Conversations::MessagesController < Api::V1::Accounts::
     end
   end
 
+  def edit
+    new_content = params[:content]
+    
+    if message.edit_message!(new_content, current_user)
+      render json: { 
+        status: 'success', 
+        message: message.reload,
+        edit_history: message.content_attributes['editHistory'] || {}
+      }
+    else
+      render json: { 
+        status: 'error', 
+        message: 'Cannot edit this message' 
+      }, status: :unprocessable_entity
+    end
+  end
+
   def retry
     return if message.blank?
 
@@ -65,7 +82,7 @@ class Api::V1::Accounts::Conversations::MessagesController < Api::V1::Accounts::
   end
 
   def permitted_params
-    params.permit(:id, :target_language, :status, :external_error)
+    params.permit(:id, :target_language, :status, :external_error, :content)
   end
 
   def already_translated_content_available?

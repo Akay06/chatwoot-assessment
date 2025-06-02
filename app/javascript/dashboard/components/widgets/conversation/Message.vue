@@ -90,6 +90,7 @@ export default {
       hasMediaLoadError: false,
       contextMenuPosition: {},
       showBackgroundHighlight: false,
+      currentTime: Date.now(),
     };
   },
   computed: {
@@ -191,12 +192,13 @@ export default {
           !this.isFailed,
         cannedResponse:
           this.isOutgoing && this.hasText && !this.isMessageDeleted,
-        copyLink: !this.isFailed || !this.isProcessing,
+        copyLink: !this.isFailed || !this.isPending,
         translate:
-          (!this.isFailed || !this.isProcessing) &&
+          (!this.isFailed || !this.isPending) &&
           !this.isMessageDeleted &&
           this.hasText,
-        replyTo: !this.data.private && this.inboxSupportsReplyTo.outgoing,
+        replyTo: !this.data?.private && this.inboxSupportsReplyTo?.outgoing,
+        edit: this.isOwnMessage && this.isOutgoing && !this.isMessageDeleted && !this.data?.private && this.hasText && this.isWithinEditTimeLimit,
       };
     },
     contentAttributes() {
@@ -355,6 +357,27 @@ export default {
     isEmailContentType() {
       return this.contentType === CONTENT_TYPES.INCOMING_EMAIL;
     },
+    currentUser() {
+      return this.$store.getters.getCurrentUser;
+    },
+    accountId() {
+      return this.$route.params.accountId;
+    },
+    conversationId() {
+      return this.data.conversation_id;
+    },
+    isOwnMessage() {
+      return this.data?.sender?.id === this.currentUser?.id;
+    },
+    isWithinEditTimeLimit() {
+      if (!this.data?.created_at) return false;
+      
+      const messageTime = new Date(this.data.created_at * 1000); // created_at is in seconds
+      const diffInMinutes = (this.currentTime - messageTime.getTime()) / (1000 * 60); // Convert to minutes
+      const EDIT_TIME_LIMIT_MINUTES = 5; // Hardcoded 5 minutes
+      
+      return diffInMinutes <= EDIT_TIME_LIMIT_MINUTES;
+    },
   },
   watch: {
     data() {
@@ -365,10 +388,16 @@ export default {
     this.hasMediaLoadError = false;
     emitter.on(BUS_EVENTS.ON_MESSAGE_LIST_SCROLL, this.closeContextMenu);
     this.setupHighlightTimer();
+    
+    // Start timer to update current time every minute for edit timeout
+    this.timeUpdateInterval = setInterval(() => {
+      this.currentTime = Date.now();
+    }, 60000); // Update every minute
   },
   unmounted() {
     emitter.off(BUS_EVENTS.ON_MESSAGE_LIST_SCROLL, this.closeContextMenu);
     clearTimeout(this.higlightTimeout);
+    clearInterval(this.timeUpdateInterval); // Clear the time update interval
   },
   methods: {
     isAttachmentImageVideoAudio(fileType) {
@@ -446,6 +475,15 @@ export default {
       this.higlightTimeout = setTimeout(() => {
         this.showBackgroundHighlight = false;
       }, HIGHLIGHT_TIMER);
+    },
+    // Message editing methods
+    openEditModal() {
+      // Emit event to parent to set reply box in edit mode
+      this.$emit('edit-message', {
+        messageId: this.data.id,
+        content: this.data.content,
+        conversationId: this.data.conversation_id
+      });
     },
   },
 };
@@ -556,6 +594,7 @@ export default {
           :source-id="data.source_id"
           :inbox-id="data.inbox_id"
           :created-at="createdAt"
+          :content-attributes="contentAttributes"
         />
       </div>
       <Spinner v-if="isPending" size="tiny" />
@@ -590,6 +629,7 @@ export default {
         @open="openContextMenu"
         @close="closeContextMenu"
         @reply-to="handleReplyTo"
+        @edit-message="openEditModal"
       />
     </div>
   </li>
