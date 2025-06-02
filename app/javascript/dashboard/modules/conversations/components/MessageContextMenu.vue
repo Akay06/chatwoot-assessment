@@ -44,7 +44,7 @@ export default {
       default: false,
     },
   },
-  emits: ['open', 'close', 'replyTo'],
+  emits: ['open', 'close', 'replyTo', 'editMessage'],
   setup() {
     const { getPlainText } = useMessageFormatter();
 
@@ -130,6 +130,10 @@ export default {
       this.$emit('replyTo', this.message);
       this.handleClose();
     },
+    handleEdit() {
+      this.$emit('editMessage', this.message);
+      this.handleClose();
+    },
     openDeleteModal() {
       this.handleClose();
       this.showDeleteModal = true;
@@ -211,6 +215,15 @@ export default {
           }"
           variant="icon"
           @click.stop="handleCopy"
+        />
+        <MenuItem
+          v-if="enabledOptions['edit']"
+          :option="{
+            icon: 'edit',
+            label: 'Edit Message',
+          }"
+          variant="icon"
+          @click.stop="handleEdit"
         />
         <MenuItem
           v-if="enabledOptions['translate']"

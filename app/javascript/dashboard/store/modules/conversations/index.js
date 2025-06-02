@@ -177,23 +177,26 @@ export const mutations = {
     });
   },
 
-  [types.ADD_MESSAGE]({ allConversations, selectedChatId }, message) {
+  [types.ADD_MESSAGE](_state, message) {
     const { conversation_id: conversationId } = message;
-    const [chat] = getSelectedChatConversation({
-      allConversations,
-      selectedChatId: conversationId,
-    });
-    if (!chat) return;
-
+    const [chat] = getSelectedChatConversation(_state, conversationId);
+    
+    if (!chat) {
+      return;
+    }
+    
     const pendingMessageIndex = findPendingMessageIndex(chat, message);
+    
     if (pendingMessageIndex !== -1) {
+      // Update existing message (for edits)
       chat.messages[pendingMessageIndex] = message;
     } else {
+      // Add new message
       chat.messages.push(message);
       chat.timestamp = message.created_at;
       const { conversation: { unread_count: unreadCount = 0 } = {} } = message;
       chat.unread_count = unreadCount;
-      if (selectedChatId === conversationId) {
+      if (_state.selectedChatId === conversationId) {
         emitter.emit(BUS_EVENTS.FETCH_LABEL_SUGGESTIONS);
         emitter.emit(BUS_EVENTS.SCROLL_TO_MESSAGE);
       }

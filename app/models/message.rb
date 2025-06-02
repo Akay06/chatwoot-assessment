@@ -41,6 +41,7 @@ class Message < ApplicationRecord
   include MessageFilterHelpers
   include Liquidable
   NUMBER_OF_PERMITTED_ATTACHMENTS = 15
+  EDIT_TIME_LIMIT_SECONDS = 300 # 5 minutes
 
   TEMPLATE_PARAMS_SCHEMA = {
     'type': 'object',
@@ -402,6 +403,79 @@ class Message < ApplicationRecord
     # rubocop:disable Rails/SkipsModelValidations
     conversation.update_columns(last_activity_at: created_at)
     # rubocop:enable Rails/SkipsModelValidations
+  end
+
+  # Message editing methods
+  public
+  
+  def can_edit?(user = nil)
+    return false if private? # Can't edit private notes
+    return false unless user == sender # Only sender can edit
+    return false if edit_time_expired?
+    return false if conversation.status == 'resolved'
+    
+    true
+  end
+
+  def edit_time_expired?
+    Time.current > created_at + EDIT_TIME_LIMIT_SECONDS.seconds
+  end
+
+  def edit_message!(new_content, edited_by)
+    return false unless can_edit?(edited_by)
+    
+    # Store current content in history
+    edit_history = content_attributes['editHistory'] || {
+      'originalContent' => content,
+      'previousVersions' => [],
+      'editCount' => 0
+    }
+    
+    # Add current version to history
+    edit_history['previousVersions'] << {
+      'content' => content,
+      'editedAt' => Time.current.iso8601,
+      'editedBy' => edited_by.id
+    }
+    
+    # Update edit metadata
+    edit_history.merge!({
+      'isEdited' => true,
+      'editCount' => edit_history['editCount'] + 1,
+      'lastEditedAt' => Time.current.iso8601,
+      'lastEditedBy' => edited_by.id
+    })
+    
+    # Update message content and attributes
+    update!(
+      content: new_content,
+      content_attributes: content_attributes.merge({
+        'editHistory' => edit_history
+      })
+    )
+    
+    # Broadcast edit event
+    broadcast_message_edited
+    true
+  end
+
+  def is_edited?
+    content_attributes.dig('editHistory', 'isEdited') == true
+  end
+
+  def edit_count
+    content_attributes.dig('editHistory', 'editCount') || 0
+  end
+
+  def broadcast_message_edited
+    # Broadcast to conversation participants
+    # Using Rails.configuration.dispatcher for consistency with existing code
+    Rails.configuration.dispatcher.dispatch(
+      MESSAGE_UPDATED, Time.zone.now, 
+      message: self, 
+      performed_by: Current.executed_by,
+      event_type: 'message_edited'
+    )
   end
 end
 

@@ -1,6 +1,6 @@
 <script>
 // [TODO] The popout events are needlessly complex and should be simplified
-import { defineAsyncComponent, defineModel, useTemplateRef } from 'vue';
+import { defineAsyncComponent, useTemplateRef } from 'vue';
 import { mapGetters } from 'vuex';
 import { useAlert } from 'dashboard/composables';
 import { useUISettings } from 'dashboard/composables/useUISettings';
@@ -66,7 +66,22 @@ export default {
     WootMessageEditor,
   },
   mixins: [inboxMixin, fileUploadMixin, keyboardEventListenerMixins],
-  emits: ['update:popoutReplyBox', 'togglePopout'],
+  props: {
+    popoutReplyBox: {
+      type: Boolean,
+      default: false,
+    },
+    editMode: {
+      type: Object,
+      default: () => ({
+        active: false,
+        messageId: null,
+        content: '',
+        conversationId: null
+      })
+    }
+  },
+  emits: ['update:popoutReplyBox', 'togglePopout', 'edit-complete', 'edit-cancel'],
   setup() {
     const {
       uiSettings,
@@ -75,16 +90,10 @@ export default {
       fetchSignatureFlagFromUISettings,
     } = useUISettings();
 
-    const popoutReplyBox = defineModel('popoutReplyBox', {
-      type: Boolean,
-      default: false,
-    });
-
     const replyEditor = useTemplateRef('replyEditor');
 
     return {
       uiSettings,
-      popoutReplyBox,
       updateUISettings,
       isEditorHotKeyEnabled,
       fetchSignatureFlagFromUISettings,
@@ -278,6 +287,13 @@ export default {
       );
     },
     replyButtonLabel() {
+      if (this.editMode && this.editMode.active) {
+        const keyLabel = this.isEditorHotKeyEnabled('cmd_enter')
+          ? '(⌘ + ↵)'
+          : '(↵)';
+        return `Save Changes ${keyLabel}`;
+      }
+      
       let sendMessageText = this.$t('CONVERSATION.REPLYBOX.SEND');
       if (this.isPrivate) {
         sendMessageText = this.$t('CONVERSATION.REPLYBOX.CREATE');
@@ -291,6 +307,7 @@ export default {
       return {
         'is-private': this.isPrivate,
         'is-focused': this.isFocused || this.hasAttachments,
+        'is-edit-mode': this.editMode && this.editMode.active,
       };
     },
     hasAttachments() {
@@ -400,6 +417,28 @@ export default {
     },
   },
   watch: {
+    editMode: {
+      handler(newEditMode, oldEditMode) {
+        // Add null checks to prevent undefined errors
+        if (!newEditMode || !oldEditMode) return;
+        
+        if (newEditMode.active && !oldEditMode.active) {
+          // Entering edit mode
+          this.message = newEditMode.content || '';
+          // Focus the editor after Vue updates the DOM
+          this.$nextTick(() => {
+            if (this.replyEditor) {
+              this.replyEditor.focus();
+            }
+          });
+        } else if (!newEditMode.active && oldEditMode.active) {
+          // Exiting edit mode
+          this.message = '';
+        }
+      },
+      deep: true,
+      immediate: true
+    },
     currentChat(conversation, oldConversation) {
       const { can_reply: canReply } = conversation;
       if (oldConversation && oldConversation.id !== conversation.id) {
@@ -506,6 +545,9 @@ export default {
     );
   },
   methods: {
+    updatePopoutReplyBox(value) {
+      this.$emit('update:popoutReplyBox', value);
+    },
     handleInsert(article) {
       const { url, title } = article;
       if (this.isRichEditorEnabled) {
@@ -739,6 +781,12 @@ export default {
         });
     },
     async onSendReply() {
+      // Check if we're in edit mode
+      if (this.editMode && this.editMode.active) {
+        await this.handleEditMessage();
+        return;
+      }
+      
       const undefinedVariables = getUndefinedVariablesInMessage({
         message: this.message,
         variables: this.messageVariables,
@@ -1098,6 +1146,39 @@ export default {
         file => !file?.isRecordedAudio
       );
     },
+    
+    // Edit mode methods
+    async handleEditMessage() {
+      if (!this.message.trim()) {
+        useAlert('Message cannot be empty');
+        return;
+      }
+      
+      try {
+        const response = await window.axios.patch(
+          `/api/v1/accounts/${this.$route.params.accountId}/conversations/${this.editMode.conversationId}/messages/${this.editMode.messageId}/edit`,
+          { content: this.message }
+        );
+        
+        if (response.data.status === 'success') {
+          // Update the message in the store
+          this.$store.dispatch('updateMessage', response.data.message);
+          
+          // Clear the message and exit edit mode
+          this.clearMessage();
+          this.$emit('edit-complete');
+        }
+      } catch (error) {
+        console.error('❌ Error editing message:', error);
+        const errorMessage = error?.response?.data?.message || 'Failed to edit message';
+        useAlert(errorMessage);
+      }
+    },
+    
+    cancelEditMode() {
+      this.clearMessage();
+      this.$emit('edit-cancel');
+    },
   },
 };
 </script>
@@ -1106,6 +1187,13 @@ export default {
   <Banner v-if="showSelfAssignBanner" action-button-variant="ghost" color-scheme="secondary"
     class="mx-2 mb-2 rounded-lg banner--self-assign" :banner-message="$t('CONVERSATION.NOT_ASSIGNED_TO_YOU')"
     has-action-button :action-button-label="$t('CONVERSATION.ASSIGN_TO_ME')" @primary-action="onClickSelfAssign" />
+  
+  <!-- Edit Mode Banner -->
+  <Banner v-if="editMode && editMode.active" color-scheme="alert" class="mx-2 mb-2 rounded-lg banner--edit-mode"
+    banner-message="You are editing a message. Changes will be saved when you click 'Save Changes'."
+    has-action-button action-button-label="Cancel" action-button-variant="ghost"
+    @primary-action="cancelEditMode" />
+  
   <div ref="replyEditor" class="reply-box" :class="replyBoxClass">
     <ReplyTopPanel :mode="replyType" :is-message-length-reaching-threshold="isMessageLengthReachingThreshold"
       :characters-remaining="charactersRemaining" :popout-reply-box="popoutReplyBox" @set-reply-mode="setReplyMode"
@@ -1167,6 +1255,10 @@ export default {
   @apply py-2;
 }
 
+.banner--edit-mode {
+  @apply py-2;
+}
+
 .attachment-preview-box {
   @apply bg-transparent py-0 px-4;
 }
@@ -1178,6 +1270,11 @@ export default {
 
   &.is-private {
     @apply bg-[#2a251e] dark:border-n-amber-3/10 border-n-amber-12/5;
+  }
+  
+  &.is-edit-mode {
+    @apply border-woot-500 dark:border-woot-400 bg-woot-25 dark:bg-woot-800/20;
+    box-shadow: 0 0 0 1px rgba(31, 41, 55, 0.1);
   }
 }
 

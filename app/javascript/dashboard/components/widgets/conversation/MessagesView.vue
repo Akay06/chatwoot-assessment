@@ -123,6 +123,13 @@ export default {
       isProgrammaticScroll: false,
       messageSentSinceOpened: false,
       labelSuggestions: [],
+      // Edit mode state
+      editMode: {
+        active: false,
+        messageId: null,
+        content: '',
+        conversationId: null
+      }
     };
   },
 
@@ -510,6 +517,29 @@ export default {
         return false;
       });
     },
+    
+    // Edit mode handlers
+    handleEditMessage(editData) {
+      this.editMode = {
+        active: true,
+        messageId: editData.messageId,
+        content: editData.content,
+        conversationId: editData.conversationId
+      };
+    },
+    
+    cancelEditMode() {
+      this.editMode = {
+        active: false,
+        messageId: null,
+        content: '',
+        conversationId: null
+      };
+    },
+    
+    onEditComplete() {
+      this.cancelEditMode();
+    },
   },
 };
 </script>
@@ -598,6 +628,7 @@ export default {
         :is-instagram="isInstagramDM"
         :inbox-supports-reply-to="inboxSupportsReplyTo"
         :in-reply-to="getInReplyToMessage(message)"
+        @edit-message="handleEditMessage"
       />
       <li v-show="unreadMessageCount != 0" class="unread--toast">
         <span>
@@ -622,6 +653,7 @@ export default {
         :is-instagram-dm="isInstagramDM"
         :inbox-supports-reply-to="inboxSupportsReplyTo"
         :in-reply-to="getInReplyToMessage(message)"
+        @edit-message="handleEditMessage"
       />
       <ConversationLabelSuggestion
         v-if="shouldShowLabelSuggestions"
@@ -654,7 +686,10 @@ export default {
       </div>
       <ReplyBox
         v-model:popout-reply-box="isPopOutReplyBox"
+        :edit-mode="editMode"
         @toggle-popout="showPopOutReplyBox"
+        @edit-complete="onEditComplete"
+        @edit-cancel="cancelEditMode"
       />
     </div>
   </div>

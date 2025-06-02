@@ -54,6 +54,10 @@ export default {
       type: [String, Number],
       default: 0,
     },
+    contentAttributes: {
+      type: Object,
+      default: () => ({}),
+    },
   },
   computed: {
     inbox() {
@@ -106,6 +110,12 @@ export default {
         return true;
       }
       return false;
+    },
+    isEdited() {
+      return this.contentAttributes?.editHistory?.isEdited === true;
+    },
+    editCount() {
+      return this.contentAttributes?.editHistory?.editCount || 0;
     },
     showSentIndicator() {
       if (!this.showStatusIndicators) {
@@ -187,6 +197,13 @@ export default {
     >
       {{ readableTime }}
     </span>
+    <span 
+      v-if="isEdited" 
+      class="edited-indicator"
+      v-tooltip.top-start="editCount > 1 ? `Edited ${editCount} times` : 'Edited'"
+    >
+      (edited)
+    </span>
     <span v-if="externalError" class="read-indicator-wrap">
       <fluent-icon
         v-tooltip.top-start="externalError"
@@ -259,6 +276,10 @@ export default {
       @apply text-woot-100 dark:text-woot-100;
     }
 
+    .edited-indicator {
+      @apply text-woot-200 dark:text-woot-200;
+    }
+
     .action--icon {
       @apply text-white dark:text-white;
 
@@ -290,6 +311,10 @@ export default {
 
   .time {
     @apply mr-2 block text-xxs leading-[1.8];
+  }
+
+  .edited-indicator {
+    @apply mr-2 text-xxs text-slate-400 dark:text-slate-500 italic leading-[1.8];
   }
 
   .action--icon {
